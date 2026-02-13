@@ -19,6 +19,19 @@ const { Software, Licenca, TipoLicenca, SoftwareCategoria } = require('./Softwar
 const { Cliente, ClienteTipo, ClienteStatus } = require('./Cliente');
 const { Unidade, Departamento, CentroCusto } = require('./Unidade');
 const { AreaAtendimento, PerfilJornada, Feriado, CampoCustomizado, LogSistema } = require('./Admin');
+const { Tag, ChamadoTag, ChamadoAnexo } = require('./Tag');
+const { SolucaoPadrao, RoteiroAtendimento, RoteiroPasso, RoteiroExecucao } = require('./Solucao');
+const { Fabricante, Fornecedor, TermoResponsabilidade } = require('./Fabricante');
+const ValorCustomizado = require('./ValorCustomizado');
+const { ConhecimentoCategoria, ConhecimentoArtigo, ConhecimentoComentario } = require('./Conhecimento');
+const { GrupoTecnico, GrupoTecnicoUsuario } = require('./GrupoTecnico');
+const Entidade = require('./Entidade');
+const { Session, LogAcesso, EmpresaConfiguracao } = require('./Session');
+const { ChamadoRelacionado, ChamadoVinculoAtivo, ChamadoChecklist, ChamadoChecklistExecucao, DistribuicaoAutomatica, FilaChamado } = require('./ChamadoRelacionado');
+const { SlaRegra, SlaEvento, CalendarioSla } = require('./SlaRegra');
+const { Servico, RelacionamentoAtivo, DependenciaServico } = require('./Servico');
+const { AtivoGarantia, LicencaAtribuicao, InstalacaoSoftware } = require('./AtivoGarantia');
+const { CampoCustomizadoOpcao, ConfiguracaoSistema, EmailSmtp, EmailTemplate, ListaDistribuicao } = require('./Configuracao');
 
 // === RELACIONAMENTOS ===
 
@@ -114,6 +127,181 @@ CentroCusto.belongsTo(Departamento, { as: 'departamento', foreignKey: 'departame
 // LogSistema
 LogSistema.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
 
+// Tags e Chamado (muitos para muitos)
+Chamado.belongsToMany(Tag, { through: ChamadoTag, as: 'tags', foreignKey: 'chamado_id' });
+Tag.belongsToMany(Chamado, { through: ChamadoTag, as: 'chamados', foreignKey: 'tag_id' });
+
+// Chamado Anexos
+ChamadoAnexo.belongsTo(Chamado, { as: 'chamado', foreignKey: 'chamado_id' });
+ChamadoAnexo.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+Chamado.hasMany(ChamadoAnexo, { as: 'anexos', foreignKey: 'chamado_id' });
+
+// Soluções Padrão
+SolucaoPadrao.belongsTo(ChamadoTipo, { as: 'tipo', foreignKey: 'tipo_id' });
+SolucaoPadrao.belongsTo(User, { as: 'criador', foreignKey: 'criado_por' });
+
+// Roteiros de Atendimento
+RoteiroAtendimento.belongsTo(ChamadoTipo, { as: 'tipo', foreignKey: 'tipo_id' });
+RoteiroAtendimento.hasMany(RoteiroPasso, { as: 'passos', foreignKey: 'roteiro_id' });
+RoteiroPasso.belongsTo(RoteiroAtendimento, { as: 'roteiro', foreignKey: 'roteiro_id' });
+
+// Execução de Roteiros
+RoteiroExecucao.belongsTo(Chamado, { as: 'chamado', foreignKey: 'chamado_id' });
+RoteiroExecucao.belongsTo(RoteiroAtendimento, { as: 'roteiro', foreignKey: 'roteiro_id' });
+RoteiroExecucao.belongsTo(RoteiroPasso, { as: 'passo', foreignKey: 'passo_id' });
+RoteiroExecucao.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+Chamado.hasMany(RoteiroExecucao, { as: 'execucoes_roteiro', foreignKey: 'chamado_id' });
+
+// Termo de Responsabilidade
+TermoResponsabilidade.belongsTo(Ativo, { as: 'ativo', foreignKey: 'ativo_id' });
+TermoResponsabilidade.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+Ativo.hasMany(TermoResponsabilidade, { as: 'termos', foreignKey: 'ativo_id' });
+
+// Valores Customizados
+ValorCustomizado.belongsTo(CampoCustomizado, { as: 'campo', foreignKey: 'campo_id' });
+
+// Base de Conhecimento
+ConhecimentoCategoria.belongsTo(ConhecimentoCategoria, { as: 'pai', foreignKey: 'pai_id' });
+ConhecimentoCategoria.hasMany(ConhecimentoCategoria, { as: 'subcategorias', foreignKey: 'pai_id' });
+ConhecimentoCategoria.hasMany(ConhecimentoArtigo, { as: 'artigos', foreignKey: 'categoria_id' });
+
+ConhecimentoArtigo.belongsTo(ConhecimentoCategoria, { as: 'categoria', foreignKey: 'categoria_id' });
+ConhecimentoArtigo.belongsTo(User, { as: 'autor', foreignKey: 'autor_id' });
+ConhecimentoArtigo.hasMany(ConhecimentoComentario, { as: 'comentarios', foreignKey: 'artigo_id' });
+
+ConhecimentoComentario.belongsTo(ConhecimentoArtigo, { as: 'artigo', foreignKey: 'artigo_id' });
+ConhecimentoComentario.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+
+// Grupos Técnicos
+GrupoTecnico.belongsTo(AreaAtendimento, { as: 'area', foreignKey: 'area_id' });
+GrupoTecnico.belongsTo(User, { as: 'responsavel', foreignKey: 'responsavel_id' });
+GrupoTecnico.belongsToMany(User, { through: GrupoTecnicoUsuario, as: 'usuarios', foreignKey: 'grupo_id' });
+User.belongsToMany(GrupoTecnico, { through: GrupoTecnicoUsuario, as: 'grupos_tecnicos', foreignKey: 'usuario_id' });
+
+// Multi-entidade
+User.belongsTo(Entidade, { as: 'entidade', foreignKey: 'entidade_id' });
+Cliente.belongsTo(Entidade, { as: 'entidade', foreignKey: 'entidade_id' });
+Chamado.belongsTo(Entidade, { as: 'entidade', foreignKey: 'entidade_id' });
+Ativo.belongsTo(Entidade, { as: 'entidade', foreignKey: 'entidade_id' });
+Entidade.hasMany(User, { as: 'usuarios', foreignKey: 'entidade_id' });
+Entidade.hasMany(Cliente, { as: 'clientes', foreignKey: 'entidade_id' });
+Entidade.hasMany(Chamado, { as: 'chamados', foreignKey: 'entidade_id' });
+Entidade.hasMany(Ativo, { as: 'ativos', foreignKey: 'entidade_id' });
+
+// Sessões
+Session.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+User.hasMany(Session, { as: 'sessoes', foreignKey: 'usuario_id' });
+
+// Logs de Acesso
+LogAcesso.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+User.hasMany(LogAcesso, { as: 'logs_acesso', foreignKey: 'usuario_id' });
+
+// Configurações da Empresa
+EmpresaConfiguracao.belongsTo(Entidade, { as: 'entidade', foreignKey: 'entidade_id' });
+Entidade.hasMany(EmpresaConfiguracao, { as: 'configuracoes', foreignKey: 'entidade_id' });
+
+// Relacionamentos de Chamados
+ChamadoRelacionado.belongsTo(Chamado, { as: 'chamado_origem', foreignKey: 'chamado_origem_id' });
+ChamadoRelacionado.belongsTo(Chamado, { as: 'chamado_destino', foreignKey: 'chamado_destino_id' });
+Chamado.hasMany(ChamadoRelacionado, { as: 'relacionamentos_origem', foreignKey: 'chamado_origem_id' });
+Chamado.hasMany(ChamadoRelacionado, { as: 'relacionamentos_destino', foreignKey: 'chamado_destino_id' });
+
+// Vínculos Chamado-Ativo
+ChamadoVinculoAtivo.belongsTo(Chamado, { as: 'chamado', foreignKey: 'chamado_id' });
+ChamadoVinculoAtivo.belongsTo(Ativo, { as: 'ativo', foreignKey: 'ativo_id' });
+Chamado.hasMany(ChamadoVinculoAtivo, { as: 'vinculos_ativo', foreignKey: 'chamado_id' });
+Ativo.hasMany(ChamadoVinculoAtivo, { as: 'chamados_vinculados', foreignKey: 'ativo_id' });
+
+// Checklist
+ChamadoChecklist.belongsTo(ChamadoTipo, { as: 'tipo', foreignKey: 'tipo_id' });
+ChamadoTipo.hasMany(ChamadoChecklist, { as: 'checklists', foreignKey: 'tipo_id' });
+
+ChamadoChecklistExecucao.belongsTo(Chamado, { as: 'chamado', foreignKey: 'chamado_id' });
+ChamadoChecklistExecucao.belongsTo(ChamadoChecklist, { as: 'checklist', foreignKey: 'checklist_id' });
+ChamadoChecklistExecucao.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+Chamado.hasMany(ChamadoChecklistExecucao, { as: 'checklist_execucao', foreignKey: 'chamado_id' });
+
+// Filas de Chamados
+FilaChamado.belongsTo(AreaAtendimento, { as: 'area', foreignKey: 'area_id' });
+FilaChamado.belongsTo(GrupoTecnico, { as: 'grupo', foreignKey: 'grupo_id' });
+
+// SLA Regras e Eventos
+SlaRegra.belongsTo(SLA, { as: 'sla', foreignKey: 'sla_id' });
+SLA.hasMany(SlaRegra, { as: 'regras', foreignKey: 'sla_id' });
+
+SlaEvento.belongsTo(Chamado, { as: 'chamado', foreignKey: 'chamado_id' });
+SlaEvento.belongsTo(SLA, { as: 'sla', foreignKey: 'sla_id' });
+Chamado.hasMany(SlaEvento, { as: 'sla_eventos', foreignKey: 'chamado_id' });
+
+CalendarioSla.belongsTo(PerfilJornada, { as: 'perfil_jornada', foreignKey: 'perfil_jornada_id' });
+PerfilJornada.hasMany(CalendarioSla, { as: 'calendario', foreignKey: 'perfil_jornada_id' });
+
+// Serviços (CMDB)
+Servico.belongsTo(User, { as: 'responsavel', foreignKey: 'responsavel_id' });
+Servico.belongsTo(AreaAtendimento, { as: 'area', foreignKey: 'area_id' });
+Servico.belongsTo(SLA, { as: 'sla', foreignKey: 'sla_id' });
+,
+  Session,
+  LogAcesso,
+  EmpresaConfiguracao,
+  ChamadoRelacionado,
+  ChamadoVinculoAtivo,
+  ChamadoChecklist,
+  ChamadoChecklistExecucao,
+  DistribuicaoAutomatica,
+  FilaChamado,
+  SlaRegra,
+  SlaEvento,
+  CalendarioSla,
+  Servico,
+  RelacionamentoAtivo,
+  DependenciaServico,
+  AtivoGarantia,
+  LicencaAtribuicao,
+  InstalacaoSoftware,
+  CampoCustomizadoOpcao,
+  ConfiguracaoSistema,
+  EmailSmtp,
+  EmailTemplate,
+  ListaDistribuicao
+// Dependências de Serviços
+DependenciaServico.belongsTo(Servico, { as: 'servico_origem', foreignKey: 'servico_origem_id' });
+DependenciaServico.belongsTo(Servico, { as: 'servico_destino', foreignKey: 'servico_destino_id' });
+DependenciaServico.belongsTo(Ativo, { as: 'ativo', foreignKey: 'ativo_id' });
+Servico.hasMany(DependenciaServico, { as: 'dependencias_origem', foreignKey: 'servico_origem_id' });
+Servico.hasMany(DependenciaServico, { as: 'dependencias_destino', foreignKey: 'servico_destino_id' });
+
+// Relacionamentos de Ativos (CMDB)
+RelacionamentoAtivo.belongsTo(Ativo, { as: 'ativo_origem', foreignKey: 'ativo_origem_id' });
+RelacionamentoAtivo.belongsTo(Ativo, { as: 'ativo_destino', foreignKey: 'ativo_destino_id' });
+Ativo.hasMany(RelacionamentoAtivo, { as: 'relacionamentos_origem', foreignKey: 'ativo_origem_id' });
+Ativo.hasMany(RelacionamentoAtivo, { as: 'relacionamentos_destino', foreignKey: 'ativo_destino_id' });
+
+// Garantias de Ativos
+AtivoGarantia.belongsTo(Ativo, { as: 'ativo', foreignKey: 'ativo_id' });
+AtivoGarantia.belongsTo(Fornecedor, { as: 'fornecedor', foreignKey: 'fornecedor_id' });
+Ativo.hasMany(AtivoGarantia, { as: 'garantias', foreignKey: 'ativo_id' });
+
+// Licenças Atribuições
+LicencaAtribuicao.belongsTo(Licenca, { as: 'licenca', foreignKey: 'licenca_id' });
+LicencaAtribuicao.belongsTo(User, { as: 'usuario', foreignKey: 'usuario_id' });
+LicencaAtribuicao.belongsTo(Ativo, { as: 'ativo', foreignKey: 'ativo_id' });
+Licenca.hasMany(LicencaAtribuicao, { as: 'atribuicoes', foreignKey: 'licenca_id' });
+
+// Instalações de Software
+InstalacaoSoftware.belongsTo(Software, { as: 'software', foreignKey: 'software_id' });
+InstalacaoSoftware.belongsTo(Ativo, { as: 'ativo', foreignKey: 'ativo_id' });
+Software.hasMany(InstalacaoSoftware, { as: 'instalacoes', foreignKey: 'software_id' });
+Ativo.hasMany(InstalacaoSoftware, { as: 'softwares_instalados', foreignKey: 'ativo_id' });
+
+// Campos Customizados Opções
+CampoCustomizadoOpcao.belongsTo(CampoCustomizado, { as: 'campo', foreignKey: 'campo_id' });
+CampoCustomizado.hasMany(CampoCustomizadoOpcao, { as: 'opcoes', foreignKey: 'campo_id' });
+
+// Listas de Distribuição
+ListaDistribuicao.belongsTo(AreaAtendimento, { as: 'area', foreignKey: 'area_id' });
+ListaDistribuicao.belongsTo(Departamento, { as: 'departamento', foreignKey: 'departamento_id' });
+
 // Exportar todos os modelos
 module.exports = {
   sequelize,
@@ -149,5 +337,22 @@ module.exports = {
   PerfilJornada,
   Feriado,
   CampoCustomizado,
-  LogSistema
+  LogSistema,
+  Tag,
+  ChamadoTag,
+  ChamadoAnexo,
+  SolucaoPadrao,
+  RoteiroAtendimento,
+  RoteiroPasso,
+  RoteiroExecucao,
+  Fabricante,
+  Fornecedor,
+  TermoResponsabilidade,
+  ValorCustomizado,
+  ConhecimentoCategoria,
+  ConhecimentoArtigo,
+  ConhecimentoComentario,
+  GrupoTecnico,
+  GrupoTecnicoUsuario,
+  Entidade
 };

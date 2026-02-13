@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const chamadoController = require('./chamados.controller');
+const anexoController = require('./anexos.controller');
 const { authorize } = require('../../middlewares/auth');
+const { upload } = require('../../middlewares/upload');
 
 // Rotas de chamados
 router.get('/', chamadoController.list);
@@ -21,6 +23,12 @@ router.post('/:id/comentar', chamadoController.comentar);
 // Histórico e comentários
 router.get('/:id/historico', chamadoController.getHistorico);
 router.get('/:id/comentarios', chamadoController.getComentarios);
+
+// Anexos
+router.get('/:id/anexos', anexoController.list);
+router.post('/:id/anexos', upload.single('arquivo'), anexoController.upload);
+router.get('/anexos/:id/download', anexoController.download);
+router.delete('/anexos/:id', anexoController.delete);
 
 // Rotas de tipos, status e prioridades
 router.get('/config/tipos', chamadoController.getTipos);
