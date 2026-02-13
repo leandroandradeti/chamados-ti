@@ -1,0 +1,102 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Layouts
+import MainLayout from './layouts/MainLayout';
+import AuthLayout from './layouts/AuthLayout';
+
+// Pages
+import Login from './pages/Auth/Login';
+import Dashboard from './pages/Home/Dashboard';
+import MeusChamados from './pages/Home/MeusChamados';
+import ListarChamados from './pages/Ocorrencias/ListarChamados';
+import AbrirChamado from './pages/Ocorrencias/AbrirChamado';
+import DetalhesChamado from './pages/Ocorrencias/DetalhesChamado';
+import ListarAtivos from './pages/Inventario/ListarAtivos';
+import DetalhesAtivo from './pages/Inventario/DetalhesAtivo';
+import ListarClientes from './pages/Clientes/ListarClientes';
+import Configuracoes from './pages/Admin/Configuracoes';
+
+// Store
+import { useAuthStore } from './store/authStore';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+});
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BrowserRouter>
+          <Routes>
+            {/* Rotas públicas */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Login />} />
+            </Route>
+
+            {/* Rotas protegidas */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <MainLayout />
+                </ProtectedRoute>
+              }
+            >
+              {/* Home */}
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/home/dashboard" element={<Dashboard />} />
+              <Route path="/home/meus-chamados" element={<MeusChamados />} />
+
+              {/* Ocorrências */}
+              <Route path="/ocorrencias" element={<ListarChamados />} />
+              <Route path="/ocorrencias/abrir" element={<AbrirChamado />} />
+              <Route path="/ocorrencias/:id" element={<DetalhesChamado />} />
+
+              {/* Inventário */}
+              <Route path="/inventario" element={<ListarAtivos />} />
+              <Route path="/inventario/:id" element={<DetalhesAtivo />} />
+
+              {/* Clientes */}
+              <Route path="/clientes" element={<ListarClientes />} />
+
+              {/* Admin */}
+              <Route path="/admin/configuracoes" element={<Configuracoes />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+        <ToastContainer position="top-right" autoClose={3000} />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
