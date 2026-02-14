@@ -9,7 +9,7 @@ class AuthController {
 
       if (!email || !senha) {
         return res.status(400).json({ 
-          error: 'Email e senha são obrigatórios' 
+          error: 'Usuário e senha são obrigatórios' 
         });
       }
 

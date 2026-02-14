@@ -62,21 +62,21 @@ npm start
 ### 6. Crie o Usuário Admin
 
 ```sql
--- Senha: Admin@123
+-- Senha: admin
 INSERT INTO users (id, nome, email, senha, ativo) 
 VALUES (
   gen_random_uuid(), 
   'Administrador', 
-  'admin@sistema.com',
-  '$2a$10$V9YKzw5z5FvH6vMEGvqkKO8QF5oK0JZvBmXk9nJ1qKqFvH6vMEGvq',
+   'admin',
+   '$2a$10$E3C3jAplC6Tn9yNNu05ciuYxaUEQW5fjveKMtvLAzuM2QW2g9jQKu',
   true
 );
 ```
 
 ### 7. Faça Login
 - URL: http://localhost:3000/login
-- Email: `admin@sistema.com`
-- Senha: `Admin@123`
+- Usuário: `admin`
+- Senha: `admin`
 
 ---
 

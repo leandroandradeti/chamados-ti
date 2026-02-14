@@ -128,18 +128,18 @@ Abra o PostgreSQL e execute:
 -- Conectar ao banco
 \c chamados_ti
 
--- Inserir usuário admin (senha: Admin@123)
+-- Inserir usuário admin (senha: admin)
 INSERT INTO users (id, nome, email, senha, ativo) 
 VALUES (
   gen_random_uuid(), 
   'Administrador', 
-  'admin@sistema.com',
-  '$2a$10$V9YKzw5z5FvH6vMEGvqkKO8QF5oK0JZvBmXk9nJ1qKqFvH6vMEGvq',
+  'admin',
+  '$2a$10$E3C3jAplC6Tn9yNNu05ciuYxaUEQW5fjveKMtvLAzuM2QW2g9jQKu',
   true
 );
 
 -- Pegar o ID do usuário
-SELECT id, nome, email FROM users WHERE email = 'admin@sistema.com';
+SELECT id, nome, email FROM users WHERE email = 'admin';
 
 -- Copie o ID retornado e use nos próximos comandos
 
@@ -159,8 +159,8 @@ VALUES (
 ## Passo 6: Fazer Login
 
 1. Acesse: http://localhost:3000/login
-2. Email: `admin@sistema.com`
-3. Senha: `Admin@123`
+2. Usuário: `admin`
+3. Senha: `admin`
 
 ## Problemas Comuns
 

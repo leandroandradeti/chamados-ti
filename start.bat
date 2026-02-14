@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 chcp 65001 > nul
 cls
 
@@ -55,12 +56,14 @@ if not exist "backend\.env" (
     echo ⚠️  Configure backend\.env antes de usar!
 )
 
+call :prepare_database
+
 echo.
 echo ✅ Iniciando servidores...
 echo.
 echo    Backend:  http://localhost:3001
 echo    Frontend: http://localhost:3000
-echo    Login:    admin@sistema.com / Admin@123
+echo    Login:    admin / admin
 echo.
 
 start "Backend - Chamados TI" cmd /c "cd /d %~dp0backend && npm run dev"
@@ -85,12 +88,20 @@ echo.
 
 REM Detecta PostgreSQL
 echo [1/4] Verificando PostgreSQL...
-set PG_SERVICE=
-for %%s in (postgresql-x64-16 postgresql-x64-15 postgresql-x64-14 postgresql-x64-13 postgresql) do (
+set "PG_SERVICE="
+set "PG_RUNNING=0"
+
+REM Prioriza serviço em execução; se não houver, usa a maior versão instalada
+for %%s in (postgresql-x64-18 postgresql-x64-17 postgresql-x64-16 postgresql-x64-15 postgresql-x64-14 postgresql-x64-13 postgresql) do (
     sc query %%s > nul 2>&1
     if not errorlevel 1 (
-        set PG_SERVICE=%%s
-        goto :pg_found
+        if "!PG_SERVICE!"=="" set "PG_SERVICE=%%s"
+        sc query %%s | find /i "RUNNING" > nul 2>&1
+        if not errorlevel 1 (
+            set "PG_SERVICE=%%s"
+            set "PG_RUNNING=1"
+            goto :pg_found
+        )
     )
 )
 
@@ -100,8 +111,9 @@ if "%PG_SERVICE%"=="" (
     set /p continuar="Continuar mesmo assim? (S/N): "
     if /i not "%continuar%"=="S" goto :menu
 ) else (
-    sc query %PG_SERVICE% | find "RUNNING" > nul
-    if errorlevel 1 (
+    if "%PG_RUNNING%"=="1" (
+        echo ✅ PostgreSQL rodando: %PG_SERVICE%
+    ) else (
         echo ⚠️  PostgreSQL parado, tentando iniciar...
         net start %PG_SERVICE% > nul 2>&1
         if errorlevel 1 (
@@ -109,10 +121,8 @@ if "%PG_SERVICE%"=="" (
             set /p continuar="Continuar? (S/N): "
             if /i not "%continuar%"=="S" goto :menu
         ) else (
-            echo ✅ PostgreSQL iniciado
+            echo ✅ PostgreSQL iniciado: %PG_SERVICE%
         )
-    ) else (
-        echo ✅ PostgreSQL rodando
     )
 )
 
@@ -143,13 +153,15 @@ if not exist "backend\.env" (
 )
 echo ✅ Configuração OK
 
+call :prepare_database
+
 echo.
 echo [4/4] Iniciando servidores...
 echo.
 echo ═══════════════════════════════════════════════════════════
 echo    Backend:  http://localhost:3001
 echo    Frontend: http://localhost:3000
-echo    Login:    admin@sistema.com / Admin@123
+echo    Login:    admin / admin
 echo ═══════════════════════════════════════════════════════════
 echo.
 
@@ -194,6 +206,92 @@ cls
 goto :menu
 
 REM ═══════════════════════════════════════════════════════════
+REM  AUXILIAR: PREPARAR BANCO (LARAGON/POSTGRES)
+REM ═══════════════════════════════════════════════════════════
+:prepare_database
+echo.
+echo 🔎 Verificando banco de dados...
+
+set "DB_HOST=localhost"
+set "DB_PORT=5432"
+set "DB_NAME=chamados_ti"
+set "DB_USER=postgres"
+set "DB_PASSWORD="
+
+for /f "tokens=1,* delims==" %%A in ('findstr /R /C:"^DB_HOST=" "backend\.env" 2^>nul') do set "DB_HOST=%%B"
+for /f "tokens=1,* delims==" %%A in ('findstr /R /C:"^DB_PORT=" "backend\.env" 2^>nul') do set "DB_PORT=%%B"
+for /f "tokens=1,* delims==" %%A in ('findstr /R /C:"^DB_NAME=" "backend\.env" 2^>nul') do set "DB_NAME=%%B"
+for /f "tokens=1,* delims==" %%A in ('findstr /R /C:"^DB_USER=" "backend\.env" 2^>nul') do set "DB_USER=%%B"
+for /f "tokens=1,* delims==" %%A in ('findstr /R /C:"^DB_PASSWORD=" "backend\.env" 2^>nul') do set "DB_PASSWORD=%%B"
+
+call :find_psql
+if not defined PSQL_CMD (
+    echo ⚠️  psql não encontrado no PATH nem no Laragon.
+    echo    Inicie o Laragon e tente novamente.
+    exit /b 0
+)
+
+if defined DB_PASSWORD (
+    set "PGPASSWORD=%DB_PASSWORD%"
+) else (
+    set "PGPASSWORD="
+)
+
+"%PSQL_CMD%" -h "%DB_HOST%" -p "%DB_PORT%" -U "%DB_USER%" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='%DB_NAME%';" > "%temp%\chamados_ti_db_check.txt" 2>nul
+set "DB_EXISTS="
+set /p DB_EXISTS=<"%temp%\chamados_ti_db_check.txt"
+del "%temp%\chamados_ti_db_check.txt" >nul 2>&1
+
+if "%DB_EXISTS%"=="1" (
+    echo ✅ Banco '%DB_NAME%' já existe
+) else (
+    echo ⚠️  Banco '%DB_NAME%' não existe. Criando...
+    "%PSQL_CMD%" -h "%DB_HOST%" -p "%DB_PORT%" -U "%DB_USER%" -d postgres -c "CREATE DATABASE \"%DB_NAME%\";" >nul 2>&1
+    if errorlevel 1 (
+        echo ❌ Falha ao criar banco '%DB_NAME%'.
+        echo    Verifique usuário/senha no backend\.env e se o PostgreSQL do Laragon está iniciado.
+        set "PGPASSWORD="
+        exit /b 0
+    ) else (
+        echo ✅ Banco '%DB_NAME%' criado
+        if exist "database\schema.sql" (
+            echo 📥 Importando schema inicial...
+            "%PSQL_CMD%" -h "%DB_HOST%" -p "%DB_PORT%" -U "%DB_USER%" -d "%DB_NAME%" -f "database\schema.sql" >nul 2>&1
+            if errorlevel 1 (
+                echo ⚠️  Não foi possível importar schema automaticamente.
+                echo    Execute manualmente: psql -U %DB_USER% -d %DB_NAME% -f database\schema.sql
+            ) else (
+                echo ✅ Schema importado com sucesso
+            )
+        )
+    )
+)
+
+set "PGPASSWORD="
+exit /b 0
+
+REM ═══════════════════════════════════════════════════════════
+REM  AUXILIAR: DETECTAR PSQL (PATH OU LARAGON)
+REM ═══════════════════════════════════════════════════════════
+:find_psql
+set "PSQL_CMD="
+
+where psql > nul 2>&1
+if not errorlevel 1 (
+    set "PSQL_CMD=psql"
+    exit /b 0
+)
+
+for /f "delims=" %%D in ('dir /b /ad-h /o-n "C:\laragon\bin\postgresql" 2^>nul') do (
+    if exist "C:\laragon\bin\postgresql\%%D\bin\psql.exe" (
+        set "PSQL_CMD=C:\laragon\bin\postgresql\%%D\bin\psql.exe"
+        exit /b 0
+    )
+)
+
+exit /b 0
+
+REM ═══════════════════════════════════════════════════════════
 REM  OPÇÃO 4: DIAGNÓSTICO POSTGRESQL
 REM ═══════════════════════════════════════════════════════════
 :diagnose
@@ -224,47 +322,46 @@ if %FOUND%==0 (
 
 echo [2] Verificando executável...
 echo.
-where psql > nul 2>&1
-if not errorlevel 1 (
-    echo ✅ psql encontrado no PATH
-    psql --version
+call :find_psql
+if defined PSQL_CMD (
+    echo ✅ psql encontrado
+    "%PSQL_CMD%" --version
 ) else (
     echo ❌ psql não encontrado no PATH
     echo.
-    echo Procurando em locais comuns...
-    for %%v in (16 15 14 13 12) do (
-        if exist "C:\Program Files\PostgreSQL\%%v\bin\psql.exe" (
-            echo ✅ Encontrado: C:\Program Files\PostgreSQL\%%v\bin\
-            echo.
-            echo 💡 Adicione ao PATH:
-            echo    setx PATH "%%PATH%%;C:\Program Files\PostgreSQL\%%v\bin"
-        )
-    )
+    echo 💡 Se você usa Laragon, inicie o Laragon e tente novamente.
 )
 
 echo.
 echo [3] Testando conexão...
 echo.
-psql -U postgres -c "SELECT version();" 2>nul
-if not errorlevel 1 (
+if not defined PSQL_CMD (
+    echo ❌ Não foi possível testar: psql indisponível
+) else (
+    "%PSQL_CMD%" -U postgres -d postgres -c "SELECT version();" 2>nul
+    if not errorlevel 1 (
     echo.
     echo ✅ Conexão OK!
-    psql -U postgres -lqt | cut -d ^| -f 1 | findstr "chamados_ti" > nul
-    if not errorlevel 1 (
+    "%PSQL_CMD%" -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='chamados_ti';" > "%temp%\chamados_ti_diag_db_check.txt" 2>nul
+    set "DIAG_DB_EXISTS="
+    set /p DIAG_DB_EXISTS=<"%temp%\chamados_ti_diag_db_check.txt"
+    del "%temp%\chamados_ti_diag_db_check.txt" >nul 2>&1
+    if "%DIAG_DB_EXISTS%"=="1" (
         echo ✅ Banco 'chamados_ti' existe
     ) else (
         echo ⚠️  Banco 'chamados_ti' não existe
         echo.
         echo Para criar:
-        echo    psql -U postgres -c "CREATE DATABASE chamados_ti;"
-        echo    psql -U postgres -d chamados_ti -f database\schema.sql
+        echo    "%PSQL_CMD%" -U postgres -d postgres -c "CREATE DATABASE chamados_ti;"
+        echo    "%PSQL_CMD%" -U postgres -d chamados_ti -f database\schema.sql
     )
-) else (
+    ) else (
     echo ❌ Falha na conexão
     echo.
     echo 💡 Verifique:
-    echo    1. PostgreSQL está rodando?
+    echo    1. PostgreSQL/Laragon está rodando?
     echo    2. Senha do usuário 'postgres' está correta?
+    )
 )
 
 echo.

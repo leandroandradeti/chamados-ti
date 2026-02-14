@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../../config/database');
+const { sequelize } = require('../config/database');
 
 // ChamadoRelacionado - Relacionamentos entre chamados
 const ChamadoRelacionado = sequelize.define('ChamadoRelacionado', {

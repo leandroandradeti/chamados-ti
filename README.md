@@ -373,8 +373,8 @@ Aplicação disponível em: `http://localhost:3000`
 
 ### Credenciais Padrão (após seed)
 
-- **Email**: admin@sistema.com
-- **Senha**: admin123
+- **Usuário**: admin
+- **Senha**: admin
 
 ⚠️ **IMPORTANTE**: Altere a senha padrão após primeiro login!
 

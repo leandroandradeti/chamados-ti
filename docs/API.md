@@ -371,7 +371,7 @@ Em desenvolvimento:
 ```bash
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@sistema.com","senha":"Admin@123"}'
+  -d '{"email":"admin","senha":"admin"}'
 ```
 
 ### Criar Chamado

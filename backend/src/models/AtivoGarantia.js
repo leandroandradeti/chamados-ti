@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../../config/database');
+const { sequelize } = require('../config/database');
 
 // AtivoGarantia - Garantias de ativos
 const AtivoGarantia = sequelize.define('AtivoGarantia', {

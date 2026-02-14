@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../../config/database');
+const { sequelize } = require('../config/database');
 
 // CampoCustomizadoOpcao - Opções para campos select/radio/checkbox
 const CampoCustomizadoOpcao = sequelize.define('CampoCustomizadoOpcao', {

@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../../config/database');
+const { sequelize } = require('../config/database');
 
 // SlaRegra - Regras condicionais de SLA
 const SlaRegra = sequelize.define('SlaRegra', {

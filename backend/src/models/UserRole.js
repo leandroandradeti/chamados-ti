@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../../config/database');
+const { sequelize } = require('../config/database');
 
 // Tabela intermediária User <-> Role (muitos para muitos)
 const UserRole = sequelize.define('UserRole', {

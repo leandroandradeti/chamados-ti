@@ -68,13 +68,14 @@ function Login() {
       <form onSubmit={handleSubmit}>
         <TextField
           fullWidth
-          label="Email"
+          label="Usuário"
           name="email"
-          type="email"
+          type="text"
           value={formData.email}
           onChange={handleChange}
           margin="normal"
           required
+          autoComplete="username"
           autoFocus
         />
         <TextField
@@ -86,6 +87,7 @@ function Login() {
           onChange={handleChange}
           margin="normal"
           required
+          autoComplete="current-password"
         />
         <Button
           fullWidth
