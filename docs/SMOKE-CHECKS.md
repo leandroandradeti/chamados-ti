@@ -42,8 +42,26 @@ Invoke-WebRequest -Uri 'http://localhost:3001/api/inventario' -Headers $headers 
 6. Excluir em cadeia (centro de custo -> departamento -> unidade -> cliente)
 7. Confirmar logs em `/api/admin/logs?modulo=clientes`
 
+## Validação de ciclo de chamados + SLA avançado (Sprint 3)
+1. Criar chamado em `/api/ocorrencias`
+2. Atribuir técnico em `/api/ocorrencias/:id/atribuir`
+3. Transferir área em `/api/ocorrencias/:id/transferir`
+4. Pausar chamado em `/api/ocorrencias/:id/pausar` com `motivo`
+5. Retomar chamado em `/api/ocorrencias/:id/retomar`
+6. Adicionar comentário em `/api/ocorrencias/:id/comentar`
+7. Resolver chamado em `/api/ocorrencias/:id/resolver` com `solucao`
+8. Fechar chamado em `/api/ocorrencias/:id/fechar`
+9. Consultar histórico em `/api/ocorrencias/:id/historico`
+10. Consultar timeline em `/api/ocorrencias/:id/sla-eventos`
+11. Validar auditoria em `/api/admin/logs?modulo=ocorrencias`
+
+## Cenários de erro esperados (operações de estado)
+- `400` para payload obrigatório ausente (`tecnico_id`, `area_id`, `comentario`, `motivo`, `solucao`).
+- `404` para chamado inexistente.
+- `409` para transição inválida de estado (ex.: fechar já fechado, retomar não pausado).
+
 ## Última execução validada
-- Data: `2026-02-16`
-- Status: `OK`
-- Endpoints validados: `entidades`, `clientes (list/create/update/delete)`, `inventario (list)`, `admin logs`.
-- Endpoints validados: `clientes organizacional (unidades/departamentos/centros-custo)`.
+- Data: `2026-02-17`
+- Status: `Pendente de execução completa pós-ajustes Sprint 3`
+- Endpoints validados anteriormente: `entidades`, `clientes (list/create/update/delete)`, `inventario (list)`, `admin logs`.
+- Escopo adicionado para validação: `ocorrencias (atribuir/transferir/pausar/retomar/comentar/resolver/fechar)`, `historico`, `sla-eventos`.

@@ -10,6 +10,7 @@ const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const API_VERSION = process.env.API_VERSION || 'v1';
 
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
@@ -25,8 +26,10 @@ const defaultOrigins = [
   'http://127.0.0.1:3000'
 ];
 
-const allowedOrigins = new Set([...defaultOrigins, ...envOrigins]);
+const normalizeOrigin = (value) => (value || '').trim().replace(/\/+$/, '');
+const allowedOrigins = new Set([...defaultOrigins, ...envOrigins].map(normalizeOrigin));
 const lanOriginRegex = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)[^/]*:3000$/i;
+const localhostOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 // Middlewares de Segurança
 app.use(helmet());
@@ -51,7 +54,13 @@ app.use(cors({
       return;
     }
 
-    if (allowedOrigins.has(origin) || lanOriginRegex.test(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+
+    if (
+      allowedOrigins.has(normalizedOrigin) ||
+      lanOriginRegex.test(normalizedOrigin) ||
+      localhostOriginRegex.test(normalizedOrigin)
+    ) {
       callback(null, true);
       return;
     }
@@ -86,6 +95,7 @@ app.use((req, res, next) => {
 });
 
 // Rotas
+app.use(`/api/${API_VERSION}`, routes);
 app.use('/api', routes);
 
 // Rota de Health Check
@@ -93,7 +103,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    version: process.env.API_VERSION || 'v1'
+    version: API_VERSION
   });
 });
 
@@ -119,7 +129,7 @@ const startServer = async () => {
     app.listen(PORT, () => {
       logger.info(`🚀 Servidor rodando na porta ${PORT}`);
       logger.info(`🌍 Ambiente: ${process.env.NODE_ENV}`);
-      logger.info(`📡 API: http://localhost:${PORT}/api/${process.env.API_VERSION}`);
+      logger.info(`📡 API: http://localhost:${PORT}/api/${API_VERSION}`);
     });
   } catch (error) {
     logger.error('❌ Erro ao iniciar servidor:', error);

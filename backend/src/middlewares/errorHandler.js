@@ -53,6 +53,13 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  if (typeof err.message === 'string' && err.message.includes('Origem não permitida por CORS')) {
+    return res.status(403).json({
+      error: 'Origem não permitida por CORS',
+      message: err.message
+    });
+  }
+
   // Erro padrão
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Erro interno do servidor';

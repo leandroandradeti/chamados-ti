@@ -1,5 +1,25 @@
 # Changelog - Sistema de Chamados TI
 
+## [1.3.2] - Sprint 3 (Fluxo Operacional + Pausa/Retomada SLA)
+
+### Added (1.3.2)
+
+- Endpoints de ciclo para pausa e retomada de chamados:
+  - `POST /api/ocorrencias/:id/pausar`
+  - `POST /api/ocorrencias/:id/retomar`
+- Ajuste de prazo SLA na retomada com base no tempo efetivamente pausado.
+- Registros de histórico para `fechamento` e `reabertura` no ciclo do chamado.
+
+### Changed (1.3.2)
+
+- Operações de estado agora validam payload obrigatório e transições inválidas com respostas `400/409`.
+- Fluxo de ocorrências com trilha reforçada de auditoria e eventos SLA para pausa/retomada.
+- Documento de smoke checks expandido para validar o ciclo completo de chamados + SLA.
+
+### Fixed (1.3.2)
+
+- Padronização dos retornos de erro em operações críticas (`atribuir`, `transferir`, `comentar`, `resolver`, `fechar`, `reabrir`).
+
 ## [1.3.1] - Sprint 3 (SLA Regras + Métricas Filtradas)
 
 ### Added (1.3.1)

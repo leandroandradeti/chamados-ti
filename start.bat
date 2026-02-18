@@ -40,6 +40,8 @@ echo    🚀 Iniciando Sistema - Modo Rápido
 echo ═══════════════════════════════════════════════════════════
 echo.
 
+call :check_node_version
+
 REM Instala dependências se necessário
 if not exist "backend\node_modules" (
     echo 📦 Instalando backend...
@@ -47,6 +49,10 @@ if not exist "backend\node_modules" (
 )
 if not exist "frontend\node_modules" (
     echo 📦 Instalando frontend...
+    cd frontend && call npm install --silent && cd ..
+)
+if not exist "frontend\node_modules\.bin\react-scripts.cmd" (
+    echo 📦 Corrigindo dependências do frontend - react-scripts...
     cd frontend && call npm install --silent && cd ..
 )
 
@@ -67,11 +73,16 @@ echo    Frontend: http://localhost:3000
 echo    Login:    admin / admin
 echo.
 
-call :free_port 3001 Backend
-call :free_port 3000 Frontend
+call :is_backend_healthy
+if "%BACKEND_READY%"=="1" (
+    echo ℹ️  Backend já está em execução na porta 3001.
+) else (
+    call :free_port 3001 Backend
+    start "Backend - Chamados TI" cmd /c "cd /d %~dp0backend && npm run dev"
+    call :wait_backend_healthy
+)
 
-start "Backend - Chamados TI" cmd /c "cd /d %~dp0backend && npm run dev"
-timeout /t 3 /nobreak > nul
+call :free_port 3000 Frontend
 start "Frontend - Chamados TI" cmd /c "cd /d %~dp0frontend && npm start"
 
 echo ✅ Sistema iniciado!
@@ -79,7 +90,6 @@ echo.
 timeout /t 3 > nul
 exit
 
-REM ═══════════════════════════════════════════════════════════
 REM  OPÇÃO 2: INICIAR COM DIAGNÓSTICO
 REM ═══════════════════════════════════════════════════════════
 :start_full
@@ -89,6 +99,8 @@ echo ═════════════════════════
 echo    🔧 Iniciando Sistema - Modo Completo
 echo ═══════════════════════════════════════════════════════════
 echo.
+
+call :check_node_version
 
 REM Detecta PostgreSQL
 echo [1/4] Verificando PostgreSQL...
@@ -146,6 +158,13 @@ if not exist "frontend\node_modules" (
     echo ✅ Frontend OK
 )
 
+if not exist "frontend\node_modules\.bin\react-scripts.cmd" (
+    echo 📦 react-scripts ausente, reinstalando dependências do frontend...
+    cd frontend && call npm install && cd ..
+) else (
+    echo ✅ react-scripts OK
+)
+
 echo.
 echo [3/4] Verificando configuração...
 if not exist "backend\.env" (
@@ -170,11 +189,16 @@ echo    Login:    admin / admin
 echo ═══════════════════════════════════════════════════════════
 echo.
 
-call :free_port 3001 Backend
-call :free_port 3000 Frontend
+call :is_backend_healthy
+if "%BACKEND_READY%"=="1" (
+    echo ℹ️  Backend já está em execução na porta 3001.
+) else (
+    call :free_port 3001 Backend
+    start "Backend DEV" cmd /k "cd /d %~dp0backend && npm run dev"
+    call :wait_backend_healthy
+)
 
-start "Backend DEV" cmd /k "cd /d %~dp0backend && npm run dev"
-timeout /t 5 /nobreak > nul
+call :free_port 3000 Frontend
 start "Frontend DEV" cmd /k "cd /d %~dp0frontend && npm start"
 
 echo ✅ Sistema iniciado com diagnóstico completo!
@@ -214,6 +238,90 @@ cls
 goto :menu
 
 REM ═══════════════════════════════════════════════════════════
+REM  AUXILIAR: VERIFICAR SAÚDE BACKEND
+REM ═══════════════════════════════════════════════════════════
+:is_backend_healthy
+set "BACKEND_READY=0"
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:3001/health' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if not errorlevel 1 set "BACKEND_READY=1"
+exit /b 0
+
+REM ═══════════════════════════════════════════════════════════
+REM  AUXILIAR: AGUARDAR BACKEND SUBIR
+REM ═══════════════════════════════════════════════════════════
+:wait_backend_healthy
+set "BACKEND_READY=0"
+echo ⏳ Aguardando backend ficar disponível...
+
+for /l %%I in (1,1,20) do (
+    call :is_backend_healthy
+    if "!BACKEND_READY!"=="1" (
+        goto :backend_ready
+    )
+    timeout /t 1 /nobreak >nul
+)
+
+:backend_ready
+if "%BACKEND_READY%"=="1" (
+    echo ✅ Backend pronto.
+) else (
+    echo ⚠️  Backend não respondeu no tempo esperado.
+    echo    O frontend será iniciado mesmo assim.
+)
+
+exit /b 0
+
+REM ═══════════════════════════════════════════════════════════
+REM  AUXILIAR: CHECAR VERSÃO DO NODE
+REM ═══════════════════════════════════════════════════════════
+:check_node_version
+set "NODE_MAJOR="
+for /f %%V in ('node -p "process.versions.node.split(\".\")[0]" 2^>nul') do set "NODE_MAJOR=%%V"
+
+if not defined NODE_MAJOR (
+    echo ⚠️  Node.js não encontrado no PATH.
+    echo    Instale o Node.js LTS para executar o sistema.
+    exit /b 0
+)
+
+if %NODE_MAJOR% GEQ 22 (
+    echo ⚠️  Node.js %NODE_MAJOR% detectado.
+    echo    Tentando alternar automaticamente para Node.js 20 LTS via nvm...
+
+    where nvm >nul 2>&1
+    if errorlevel 1 (
+        echo    nvm não encontrado no PATH.
+        echo    Recomendado para o frontend com react-scripts: Node.js 20 LTS.
+        echo    O sistema continua iniciando, mas pode exibir avisos de depreciação.
+    ) else (
+        nvm use 20 >nul 2>&1
+        if errorlevel 1 (
+            echo    Não foi possível ativar Node.js 20 com nvm.
+            echo    Verifique: nvm install 20 ^&^& nvm use 20
+            echo    O sistema continua iniciando, mas pode exibir avisos de depreciação.
+        ) else (
+            set "NODE_MAJOR="
+            for /f %%V in ('node -p "process.versions.node.split(\".\")[0]" 2^>nul') do set "NODE_MAJOR=%%V"
+            if "%NODE_MAJOR%"=="20" (
+                echo ✅ Node.js 20 ativado automaticamente via nvm.
+            ) else (
+                echo ⚠️  nvm executado, mas a versão ativa permaneceu em Node.js %NODE_MAJOR%.
+                echo    O sistema continua iniciando, mas pode exibir avisos de depreciação.
+            )
+        )
+    )
+) else (
+    if %NODE_MAJOR% LSS 18 (
+        echo ⚠️  Node.js %NODE_MAJOR% detectado.
+        echo    Recomendado usar Node.js 20 LTS para melhor compatibilidade.
+    ) else (
+        echo ✅ Node.js %NODE_MAJOR% detectado.
+    )
+)
+
+exit /b 0
+
+REM ═══════════════════════════════════════════════════════════
 REM  AUXILIAR: BOOTSTRAP BACKEND (MIGRATE + SEED)
 REM ═══════════════════════════════════════════════════════════
 :run_backend_bootstrap
@@ -222,7 +330,7 @@ set "RUN_BOOTSTRAP=true"
 for /f "tokens=1,* delims==" %%A in ('findstr /R /C:"^START_RUN_BOOTSTRAP=" "backend\.env" 2^>nul') do set "RUN_BOOTSTRAP=%%B"
 
 if /i not "%RUN_BOOTSTRAP%"=="true" (
-    echo ℹ️  Bootstrap backend desabilitado (START_RUN_BOOTSTRAP=%RUN_BOOTSTRAP%)
+    echo ℹ️  Bootstrap backend desabilitado - START_RUN_BOOTSTRAP=%RUN_BOOTSTRAP%
     exit /b 0
 )
 

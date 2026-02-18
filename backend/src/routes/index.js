@@ -13,6 +13,15 @@ const conhecimentoRoutes = require('../modules/conhecimento/conhecimento.routes'
 const { authenticate } = require('../middlewares/auth');
 const { resolveTenant } = require('../middlewares/tenant');
 
+router.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'chamados-ti-backend',
+    version: process.env.API_VERSION || 'v1',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Rotas públicas
 router.use('/auth', authRoutes);
 

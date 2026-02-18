@@ -139,6 +139,12 @@ const getSlaState = (chamado, now = new Date()) => {
   return { aberto, sla_vencido, sla_em_risco };
 };
 
+const getStatusTipo = async (statusId) => {
+  if (!statusId) return null;
+  const status = await ChamadoStatus.findByPk(statusId);
+  return status?.tipo || null;
+};
+
 const logSlaEvent = async ({ req, chamadoId, acao, descricao, dados_antes = null, dados_depois = null }) => {
   try {
     const dadosDepoisComTenant = {
@@ -630,6 +636,10 @@ class ChamadoController {
   async atribuir(req, res, next) {
     try {
       const { tecnico_id } = req.body;
+      if (!tecnico_id) {
+        return res.status(400).json({ error: 'tecnico_id é obrigatório' });
+      }
+
       const where = { id: req.params.id };
       if (req.tenantId) where.entidade_id = req.tenantId;
 
@@ -637,6 +647,11 @@ class ChamadoController {
 
       if (!chamado) {
         return res.status(404).json({ error: 'Chamado não encontrado' });
+      }
+
+      const statusTipo = await getStatusTipo(chamado.status_id);
+      if (['fechado', 'cancelado'].includes(statusTipo)) {
+        return res.status(409).json({ error: `Não é possível atribuir chamado com status ${statusTipo}` });
       }
 
       const dadosAntes = {
@@ -679,6 +694,10 @@ class ChamadoController {
   async resolver(req, res, next) {
     try {
       const { solucao } = req.body;
+      if (!solucao || !String(solucao).trim()) {
+        return res.status(400).json({ error: 'solucao é obrigatória para resolver o chamado' });
+      }
+
       const where = { id: req.params.id };
       if (req.tenantId) where.entidade_id = req.tenantId;
 
@@ -686,6 +705,11 @@ class ChamadoController {
 
       if (!chamado) {
         return res.status(404).json({ error: 'Chamado não encontrado' });
+      }
+
+      const statusTipoAtual = await getStatusTipo(chamado.status_id);
+      if (['resolvido', 'fechado', 'cancelado'].includes(statusTipoAtual)) {
+        return res.status(409).json({ error: `Não é possível resolver chamado com status ${statusTipoAtual}` });
       }
 
       // Buscar status "resolvido"
@@ -745,6 +769,15 @@ class ChamadoController {
       if (!chamado) {
         return res.status(404).json({ error: 'Chamado não encontrado' });
       }
+
+      const statusTipoAtual = await getStatusTipo(chamado.status_id);
+      if (statusTipoAtual === 'fechado') {
+        return res.status(409).json({ error: 'Chamado já está fechado' });
+      }
+      if (statusTipoAtual === 'cancelado') {
+        return res.status(409).json({ error: 'Não é possível fechar chamado cancelado' });
+      }
+
       const statusFechado = await ChamadoStatus.findOne({ 
         where: { tipo: 'fechado' } 
       });
@@ -776,6 +809,14 @@ class ChamadoController {
         tempoReal: chamado.data_fechamento || new Date()
       });
 
+      await ChamadoHistorico.create({
+        chamado_id: chamado.id,
+        usuario_id: req.user.id,
+        tipo: 'fechamento',
+        descricao: 'Chamado fechado',
+        visivel_solicitante: true
+      });
+
       res.json(chamado);
     } catch (error) {
       next(error);
@@ -792,6 +833,12 @@ class ChamadoController {
       if (!chamado) {
         return res.status(404).json({ error: 'Chamado não encontrado' });
       }
+
+      const statusTipoAtual = await getStatusTipo(chamado.status_id);
+      if (!['resolvido', 'fechado'].includes(statusTipoAtual)) {
+        return res.status(409).json({ error: `Não é possível reabrir chamado com status ${statusTipoAtual || 'desconhecido'}` });
+      }
+
       const statusAberto = await ChamadoStatus.findOne({ 
         where: { tipo: 'aberto' } 
       });
@@ -829,6 +876,14 @@ class ChamadoController {
         tempoReal: null
       });
 
+      await ChamadoHistorico.create({
+        chamado_id: chamado.id,
+        usuario_id: req.user.id,
+        tipo: 'reabertura',
+        descricao: 'Chamado reaberto',
+        visivel_solicitante: true
+      });
+
       res.json(chamado);
     } catch (error) {
       next(error);
@@ -838,6 +893,9 @@ class ChamadoController {
   async comentar(req, res, next) {
     try {
       const { comentario, tipo } = req.body;
+      if (!comentario || !String(comentario).trim()) {
+        return res.status(400).json({ error: 'comentario é obrigatório' });
+      }
 
       const where = { id: req.params.id };
       if (req.tenantId) where.entidade_id = req.tenantId;
@@ -977,6 +1035,10 @@ class ChamadoController {
   async transferir(req, res, next) {
     try {
       const { area_id, motivo } = req.body;
+      if (!area_id) {
+        return res.status(400).json({ error: 'area_id é obrigatório' });
+      }
+
       const where = { id: req.params.id };
       if (req.tenantId) where.entidade_id = req.tenantId;
 
@@ -984,6 +1046,11 @@ class ChamadoController {
 
       if (!chamado) {
         return res.status(404).json({ error: 'Chamado não encontrado' });
+      }
+
+      const statusTipo = await getStatusTipo(chamado.status_id);
+      if (['fechado', 'cancelado'].includes(statusTipo)) {
+        return res.status(409).json({ error: `Não é possível transferir chamado com status ${statusTipo}` });
       }
 
       const dadosAntes = {
@@ -1014,6 +1081,190 @@ class ChamadoController {
         dadosDepois: {
           area_id: chamado.area_id,
           tecnico_responsavel_id: chamado.tecnico_responsavel_id
+        }
+      });
+
+      res.json(chamado);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async pausar(req, res, next) {
+    try {
+      const { motivo } = req.body;
+      if (!motivo || !String(motivo).trim()) {
+        return res.status(400).json({ error: 'motivo é obrigatório para pausar o chamado' });
+      }
+
+      const where = { id: req.params.id };
+      if (req.tenantId) where.entidade_id = req.tenantId;
+
+      const chamado = await Chamado.findOne({ where });
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado' });
+      }
+
+      if (chamado.pausado) {
+        return res.status(409).json({ error: 'Chamado já está pausado' });
+      }
+
+      const statusTipo = await getStatusTipo(chamado.status_id);
+      if (['fechado', 'cancelado'].includes(statusTipo)) {
+        return res.status(409).json({ error: `Não é possível pausar chamado com status ${statusTipo}` });
+      }
+
+      await chamado.update({
+        pausado: true,
+        motivo_pausa: String(motivo).trim()
+      });
+
+      await ChamadoHistorico.create({
+        chamado_id: chamado.id,
+        usuario_id: req.user.id,
+        tipo: 'pausa',
+        descricao: 'Chamado pausado',
+        valor_novo: { motivo: chamado.motivo_pausa },
+        visivel_solicitante: true
+      });
+
+      await logSlaEvent({
+        req,
+        chamadoId: chamado.id,
+        acao: 'pause',
+        descricao: 'Chamado pausado',
+        dados_depois: {
+          pausado: chamado.pausado,
+          motivo_pausa: chamado.motivo_pausa,
+          prazo_sla: chamado.prazo_sla,
+          tempo_pausado: chamado.tempo_pausado
+        }
+      });
+
+      await persistSlaEvento({
+        req,
+        chamado,
+        tipoEvento: 'resolucao',
+        status: 'pausado',
+        tempoPrevisto: chamado.prazo_sla,
+        tempoReal: new Date(),
+        tempoPausadoMinutos: chamado.tempo_pausado || 0
+      });
+
+      await auditLog(req, {
+        modulo: 'ocorrencias',
+        acao: 'pause',
+        entidade: 'chamado',
+        entidadeId: chamado.id,
+        descricao: 'Chamado pausado',
+        dadosDepois: {
+          pausado: chamado.pausado,
+          motivo_pausa: chamado.motivo_pausa,
+          prazo_sla: chamado.prazo_sla
+        }
+      });
+
+      res.json(chamado);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async retomar(req, res, next) {
+    try {
+      const where = { id: req.params.id };
+      if (req.tenantId) where.entidade_id = req.tenantId;
+
+      const chamado = await Chamado.findOne({ where });
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado' });
+      }
+
+      if (!chamado.pausado) {
+        return res.status(409).json({ error: 'Chamado não está pausado' });
+      }
+
+      const statusTipo = await getStatusTipo(chamado.status_id);
+      if (['fechado', 'cancelado'].includes(statusTipo)) {
+        return res.status(409).json({ error: `Não é possível retomar chamado com status ${statusTipo}` });
+      }
+
+      const ultimaPausa = await ChamadoHistorico.findOne({
+        where: {
+          chamado_id: chamado.id,
+          tipo: 'pausa'
+        },
+        order: [['created_at', 'DESC']]
+      });
+
+      const inicioPausa = ultimaPausa?.created_at ? new Date(ultimaPausa.created_at) : new Date();
+      const agora = new Date();
+      const minutosPausadosNoCiclo = Math.max(1, Math.ceil((agora.getTime() - inicioPausa.getTime()) / 60000));
+      const tempoPausadoTotal = (chamado.tempo_pausado || 0) + minutosPausadosNoCiclo;
+      const novoPrazoSla = chamado.prazo_sla ? addMinutes(chamado.prazo_sla, minutosPausadosNoCiclo) : null;
+
+      const state = getSlaState({
+        ...chamado.toJSON(),
+        prazo_sla: novoPrazoSla,
+        pausado: false
+      });
+
+      await chamado.update({
+        pausado: false,
+        motivo_pausa: null,
+        tempo_pausado: tempoPausadoTotal,
+        prazo_sla: novoPrazoSla,
+        sla_vencido: state.sla_vencido
+      });
+
+      await ChamadoHistorico.create({
+        chamado_id: chamado.id,
+        usuario_id: req.user.id,
+        tipo: 'retomada',
+        descricao: 'Chamado retomado',
+        valor_novo: {
+          minutos_pausados: minutosPausadosNoCiclo,
+          tempo_pausado_total: tempoPausadoTotal
+        },
+        visivel_solicitante: true
+      });
+
+      await logSlaEvent({
+        req,
+        chamadoId: chamado.id,
+        acao: 'resume',
+        descricao: 'Chamado retomado com ajuste de prazo SLA',
+        dados_depois: {
+          pausado: chamado.pausado,
+          prazo_sla: chamado.prazo_sla,
+          tempo_pausado: chamado.tempo_pausado,
+          sla_vencido: chamado.sla_vencido
+        }
+      });
+
+      await persistSlaEvento({
+        req,
+        chamado,
+        tipoEvento: 'resolucao',
+        status: 'retomado',
+        tempoPrevisto: chamado.prazo_sla,
+        tempoReal: null,
+        tempoPausadoMinutos: chamado.tempo_pausado
+      });
+
+      await auditLog(req, {
+        modulo: 'ocorrencias',
+        acao: 'resume',
+        entidade: 'chamado',
+        entidadeId: chamado.id,
+        descricao: 'Chamado retomado',
+        dadosDepois: {
+          pausado: chamado.pausado,
+          prazo_sla: chamado.prazo_sla,
+          tempo_pausado: chamado.tempo_pausado,
+          sla_vencido: chamado.sla_vencido
         }
       });
 

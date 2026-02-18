@@ -16,6 +16,8 @@ router.delete('/:id', authorize('ocorrencias', 'chamados', 'delete'), chamadoCon
 // Ações no chamado
 router.post('/:id/atribuir', chamadoController.atribuir);
 router.post('/:id/transferir', chamadoController.transferir);
+router.post('/:id/pausar', chamadoController.pausar);
+router.post('/:id/retomar', chamadoController.retomar);
 router.post('/:id/resolver', chamadoController.resolver);
 router.post('/:id/fechar', chamadoController.fechar);
 router.post('/:id/reabrir', chamadoController.reabrir);

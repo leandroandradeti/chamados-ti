@@ -23,8 +23,8 @@ Consolidar o núcleo de **Chamados + SLA** com eventos rastreáveis, evolução 
 
 - [x] Garantir endpoints principais do ciclo de chamado
 - [x] Validar escopo tenant nas operações principais
-- [ ] Revisar padronização de histórico por evento de ciclo
-- [ ] Cobrir cenários de erro/retorno para operações de estado
+- [x] Revisar padronização de histórico por evento de ciclo
+- [x] Cobrir cenários de erro/retorno para operações de estado
 
 ## US-02 — SLA com eventos rastreáveis
 
@@ -37,7 +37,7 @@ Consolidar o núcleo de **Chamados + SLA** com eventos rastreáveis, evolução 
 - [x] Persistir eventos de SLA em `sla_eventos`
 - [x] Expor timeline `GET /api/ocorrencias/:id/sla-eventos`
 - [x] Aplicar regras condicionais de SLA (`sla_regras`) na definição de prazo
-- [ ] Incluir marcações de pausa/retomada com impacto no tempo efetivo
+- [x] Incluir marcações de pausa/retomada com impacto no tempo efetivo
 
 ## US-03 — Métricas operacionais de SLA
 
@@ -61,9 +61,9 @@ Consolidar o núcleo de **Chamados + SLA** com eventos rastreáveis, evolução 
 ### Tarefas US-04
 
 - [x] Log de eventos críticos de SLA em `logs_sistema`
-- [ ] Auditar ações de atribuição, transferência e comentários
-- [ ] Consolidar smoke checks de chamados + SLA avançado
-- [ ] Atualizar changelog ao final do sprint
+- [x] Auditar ações de atribuição, transferência e comentários
+- [x] Consolidar smoke checks de chamados + SLA avançado
+- [x] Atualizar changelog ao final do sprint
 
 ## Critério de Pronto (Sprint 3)
 

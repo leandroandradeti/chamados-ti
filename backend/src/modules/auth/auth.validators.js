@@ -12,7 +12,7 @@ const loginValidation = [
     .isString()
     .notEmpty()
     .withMessage('Senha é obrigatória')
-    .isLength({ min: 8, max: 128 })
+    .isLength({ min: 1, max: 128 })
     .withMessage('Senha inválida')
 ];
 
