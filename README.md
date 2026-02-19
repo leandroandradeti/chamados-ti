@@ -2,7 +2,7 @@
 
 Sistema completo de **IT Service Management (ITSM)** e **IT Asset Management (ITAM)** inspirado em GLPI, desenvolvido com tecnologias modernas para gestão eficiente de chamados técnicos, inventário de ativos e base de conhecimento.
 
-![Version](https://img.shields.io/badge/version-1.3.2-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![License](https://img.shields.io/badge/license-ISC-green)
 
 **Linguagens:**

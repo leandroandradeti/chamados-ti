@@ -7,6 +7,7 @@ const usuariosRoutes = require('./usuarios.routes');
 const configuracoes = require('./configuracoes.routes');
 const entidadesRoutes = require('./entidades.routes');
 const logsRoutes = require('./logs.routes');
+const areasRoutes = require('./areas.routes');
 
 // Middleware para verificar se é admin
 const isAdmin = (req, res, next) => {
@@ -24,5 +25,6 @@ router.use('/usuarios', usuariosRoutes);
 router.use('/configuracoes', configuracoes);
 router.use('/entidades', entidadesRoutes);
 router.use('/logs', logsRoutes);
+router.use('/areas', areasRoutes);
 
 module.exports = router;

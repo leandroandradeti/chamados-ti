@@ -3,8 +3,9 @@
 ## Status Atual
 - Sprint 1: ✅ Concluída
 - Sprint 2: ✅ Concluída
-- Sprint 3: 🚀 Em andamento
-- Versão-alvo atual: `1.3.0`
+- Sprint 3: ✅ Concluída
+- Sprint 4: 🚀 Em andamento
+- Versão-alvo atual: `1.4.0`
 
 ## Objetivo
 Transformar o projeto atual em uma plataforma completa de gestão de serviços e ativos de TI, cobrindo segurança, multi-tenant, operações ITSM, ativos/CMDB, conhecimento e governança.
@@ -46,12 +47,14 @@ Transformar o projeto atual em uma plataforma completa de gestão de serviços e
 - Comentários, histórico, anexos, tags e relacionamentos
 - Regras de SLA e indicadores básicos
 
-**Status:** 🚀 Em andamento
+**Status:** ✅ Concluída
 
 ### Sprint 4 — Áreas/Grupos + Administração/Logs
 - Áreas de atendimento e grupos técnicos
 - Configurações administrativas essenciais
 - Logs e auditoria de eventos críticos
+
+**Status:** 🚀 Em andamento
 
 **Critério de pronto da Fase 1:**
 - Fluxo de chamado ponta a ponta funcional por tenant

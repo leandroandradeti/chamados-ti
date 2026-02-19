@@ -1,5 +1,23 @@
 # Changelog - Sistema de Chamados TI
 
+## [1.4.0] - Encerramento Sprint 3 e Abertura Sprint 4
+
+### Added (1.4.0)
+
+- Documento de encerramento da Sprint 3 em `docs/SPRINT-03-ENCERRAMENTO.md`.
+- Backlog executável da Sprint 4 em `docs/BACKLOG-SPRINT-04.md`.
+
+### Changed (1.4.0)
+
+- Roadmap atualizado com:
+  - Sprint 3 marcada como concluída.
+  - Sprint 4 marcada como em andamento.
+  - versão-alvo ajustada para `1.4.0`.
+
+### Fixed (1.4.0)
+
+- Alinhamento da trilha de governança entre estado real do código e planejamento de sprint.
+
 ## [1.3.2] - Sprint 3 (Fluxo Operacional + Pausa/Retomada SLA)
 
 ### Added (1.3.2)
