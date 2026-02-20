@@ -79,6 +79,16 @@ api.interceptors.request.use(
   (config) => {
     const baseUrl = String(config.baseURL || api.defaults.baseURL || '').replace(/\/+$/, '');
     const requestUrl = String(config.url || '');
+    const getBaseOrigin = (url) => {
+      if (!url || !/^https?:\/\//i.test(url)) return '';
+
+      try {
+        return new URL(url).origin;
+      } catch (error) {
+        return '';
+      }
+    };
+
     const getRequestPath = (url) => {
       if (!url) return '';
 
@@ -101,17 +111,23 @@ api.interceptors.request.use(
     if (isBackendApiPath && !hasApiPrefixInBase && !hasApiPrefixInRequest) {
       const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;
       const correctedPath = `/api/v1${normalizedPath}`;
+      const baseOrigin = getBaseOrigin(baseUrl);
 
       if (/^https?:\/\//i.test(requestUrl)) {
         try {
           const absoluteRequest = new URL(requestUrl);
           absoluteRequest.pathname = correctedPath;
           config.url = absoluteRequest.toString();
+          config.baseURL = '';
         } catch (error) {
-          config.url = correctedPath;
+          config.url = baseOrigin ? `${baseOrigin}${correctedPath}` : correctedPath;
+          config.baseURL = '';
         }
       } else {
-        config.url = correctedPath;
+        config.url = baseOrigin ? `${baseOrigin}${correctedPath}` : correctedPath;
+        if (baseOrigin) {
+          config.baseURL = '';
+        }
       }
     }
 

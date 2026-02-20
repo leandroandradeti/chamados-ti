@@ -79,6 +79,19 @@ const vercelPreviewOriginRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 app.use(helmet());
 if (process.env.NODE_ENV === 'production' && process.env.ENFORCE_HTTPS === 'true') {
   app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+
+    const hostHeader = String(req.headers.host || '').toLowerCase();
+    const isLocalRequest = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(hostHeader);
+
+    if (isLocalRequest) {
+      next();
+      return;
+    }
+
     const forwardedProto = req.headers['x-forwarded-proto'];
     const isHttps = req.secure || forwardedProto === 'https';
 
