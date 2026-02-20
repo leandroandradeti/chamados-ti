@@ -8,6 +8,19 @@ const resolveApiBaseUrl = () => {
     const trimmed = String(value || '').trim().replace(/\/+$/, '');
     if (!trimmed) return trimmed;
 
+    try {
+      const parsedUrl = new URL(trimmed);
+      const originOnly = parsedUrl.origin;
+
+      if (/\/api(\/v\d+)?$/i.test(parsedUrl.pathname.replace(/\/+$/, ''))) {
+        return `${originOnly}${parsedUrl.pathname.replace(/\/+$/, '')}`;
+      }
+
+      return `${originOnly}/api/v1`;
+    } catch (error) {
+      // segue o fluxo abaixo para urls relativas
+    }
+
     if (/\/api(\/v\d+)?$/i.test(trimmed)) {
       return trimmed;
     }
@@ -66,11 +79,40 @@ api.interceptors.request.use(
   (config) => {
     const baseUrl = String(config.baseURL || api.defaults.baseURL || '').replace(/\/+$/, '');
     const requestUrl = String(config.url || '');
-    const isBackendApiPath = /^\/(auth|home|ocorrencias|inventario|clientes|admin|conhecimento|external)(\/|$)/i.test(requestUrl);
-    const hasApiPrefixInBase = /\/api(\/v\d+)?$/i.test(baseUrl);
+    const getRequestPath = (url) => {
+      if (!url) return '';
 
-    if (isBackendApiPath && !hasApiPrefixInBase && !requestUrl.startsWith('/api/')) {
-      config.url = `/api/v1${requestUrl}`;
+      if (/^https?:\/\//i.test(url)) {
+        try {
+          return new URL(url).pathname || '';
+        } catch (error) {
+          return '';
+        }
+      }
+
+      return url;
+    };
+
+    const requestPath = getRequestPath(requestUrl);
+    const isBackendApiPath = /^\/?(auth|home|ocorrencias|inventario|clientes|admin|conhecimento|external)(\/|$)/i.test(requestPath);
+    const hasApiPrefixInBase = /\/api(\/v\d+)?$/i.test(baseUrl);
+    const hasApiPrefixInRequest = /^\/?api(\/v\d+)?\//i.test(requestPath);
+
+    if (isBackendApiPath && !hasApiPrefixInBase && !hasApiPrefixInRequest) {
+      const normalizedPath = requestPath.startsWith('/') ? requestPath : `/${requestPath}`;
+      const correctedPath = `/api/v1${normalizedPath}`;
+
+      if (/^https?:\/\//i.test(requestUrl)) {
+        try {
+          const absoluteRequest = new URL(requestUrl);
+          absoluteRequest.pathname = correctedPath;
+          config.url = absoluteRequest.toString();
+        } catch (error) {
+          config.url = correctedPath;
+        }
+      } else {
+        config.url = correctedPath;
+      }
     }
 
     const token = useAuthStore.getState().token;
