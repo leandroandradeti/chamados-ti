@@ -73,6 +73,7 @@ const normalizeOrigin = (value) => (value || '').trim().replace(/\/+$/, '');
 const allowedOrigins = new Set([...defaultOrigins, ...envOrigins].map(normalizeOrigin));
 const lanOriginRegex = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)[^/]*:3000$/i;
 const localhostOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const vercelPreviewOriginRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 // Middlewares de Segurança
 app.use(helmet());
@@ -102,7 +103,8 @@ app.use(cors({
     if (
       allowedOrigins.has(normalizedOrigin) ||
       lanOriginRegex.test(normalizedOrigin) ||
-      localhostOriginRegex.test(normalizedOrigin)
+      localhostOriginRegex.test(normalizedOrigin) ||
+      vercelPreviewOriginRegex.test(normalizedOrigin)
     ) {
       callback(null, true);
       return;
