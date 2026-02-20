@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Box,
   TextField,
@@ -22,6 +23,43 @@ function Login() {
     senha: '',
   });
 
+  const getLoginErrorMessage = (err) => {
+    const normalizedEmail = (formData.email || '').trim().toLowerCase();
+    const normalizedPassword = (formData.senha || '').trim();
+
+    if (normalizedEmail === 'admin' && normalizedPassword === 'admin') {
+      return 'Use e-mail no login. Acesso padrão: admin@chamados-ti.com / admin';
+    }
+
+    if (axios.isAxiosError(err)) {
+      if (!err.response) {
+        if (err.code === 'ECONNABORTED') {
+          return 'Tempo de resposta excedido. Tente novamente em instantes.';
+        }
+
+        return 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
+      }
+
+      const backendError = err.response.data?.error;
+
+      if (backendError) {
+        const tentativasRestantes = err.response.data?.tentativas_restantes;
+
+        if (typeof tentativasRestantes === 'number' && tentativasRestantes >= 0) {
+          return `${backendError} Tentativas restantes: ${tentativasRestantes}.`;
+        }
+
+        return backendError;
+      }
+
+      if (err.response.status === 429) {
+        return 'Muitas tentativas de login. Aguarde alguns minutos e tente novamente.';
+      }
+    }
+
+    return 'Erro inesperado ao fazer login. Tente novamente.';
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -43,16 +81,9 @@ function Login() {
       toast.success('Login realizado com sucesso!');
       navigate('/');
     } catch (err) {
-      const normalizedEmail = (formData.email || '').trim().toLowerCase();
-      const normalizedPassword = (formData.senha || '').trim();
-      const backendError = err.response?.data?.error || 'Erro ao fazer login';
-
-      if (normalizedEmail === 'admin' && normalizedPassword === 'admin') {
-        setError('Use e-mail no login. Acesso padrão: admin@chamados-ti.com / admin');
-      } else {
-        setError(backendError);
-      }
-      toast.error('Falha no login');
+      const message = getLoginErrorMessage(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
