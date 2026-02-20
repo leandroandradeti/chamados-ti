@@ -1,5 +1,32 @@
 # Changelog - Sistema de Chamados TI
 
+## [1.4.1] - Sprint 4 (Admin Frontend Mínimo + Estabilidade Auth/CORS)
+
+### Added (1.4.1)
+
+- Telas administrativas mínimas no frontend:
+  - `frontend/src/pages/Admin/Areas.js`
+  - `frontend/src/pages/Admin/GruposTecnicos.js`
+  - `frontend/src/pages/Admin/Logs.js`
+- Rotas de administração no frontend:
+  - `/admin/areas`
+  - `/admin/grupos-tecnicos`
+  - `/admin/logs`
+- Navegação lateral expandida para acesso às novas telas administrativas.
+
+### Changed (1.4.1)
+
+- Cliente HTTP do frontend reforçado para normalizar chamadas de backend com prefixo `/api/v1` em cenários de configuração de URL inconsistente.
+- Tratamento de erros de login melhorado para exibir mensagens específicas (rede, timeout, validação, rate limit).
+- Campos de formulários administrativos e de ocorrências revisados com `id`/`name` para melhor autofill e acessibilidade.
+- Backlog da Sprint 4 atualizado com conclusão da US-04 (Frontend administrativo mínimo).
+
+### Fixed (1.4.1)
+
+- Correção de CORS em localhost causada por redirecionamento HTTPS em preflight (`OPTIONS`).
+- Salvaguarda no backend para não redirecionar requisições locais/preflight durante enforce de HTTPS.
+- Ajustes de documentação de smoke checks para validação dos fluxos administrativos da Sprint 4.
+
 ## [1.4.0] - Encerramento Sprint 3 e Abertura Sprint 4
 
 ### Added (1.4.0)

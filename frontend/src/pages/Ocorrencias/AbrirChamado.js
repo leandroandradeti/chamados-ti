@@ -44,12 +44,17 @@ function AbrirChamado() {
     return response.data;
   });
 
+  const hasStatusOptions = statusList.length > 0;
+
   React.useEffect(() => {
     if (!form.status_id && statusList.length > 0) {
       const aberto = statusList.find((item) => item.tipo === 'aberto');
       if (aberto?.id) {
         setForm((prev) => ({ ...prev, status_id: aberto.id }));
+        return;
       }
+
+      setForm((prev) => ({ ...prev, status_id: statusList[0].id }));
     }
   }, [statusList, form.status_id]);
 
@@ -106,6 +111,12 @@ function AbrirChamado() {
         {formError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {formError}
+          </Alert>
+        )}
+
+        {!loadingStatus && !hasStatusOptions && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Nenhum status ativo foi encontrado. Cadastre/ative status em Administração para abrir chamados.
           </Alert>
         )}
 
@@ -190,8 +201,14 @@ function AbrirChamado() {
                   name="status_id"
                   value={form.status_id}
                   onChange={handleChange}
+                  disabled={!hasStatusOptions}
                   SelectProps={selectA11yProps}
                 >
+                  {!hasStatusOptions && (
+                    <MenuItem value="" disabled>
+                      Nenhum status disponível
+                    </MenuItem>
+                  )}
                   {statusList.map((item) => (
                     <MenuItem key={item.id} value={item.id}>
                       {normalizePtBrText(item.nome)}
@@ -205,7 +222,7 @@ function AbrirChamado() {
                   <Button variant="outlined" onClick={() => navigate('/ocorrencias')}>
                     Cancelar
                   </Button>
-                  <Button type="submit" variant="contained" disabled={createMutation.isLoading}>
+                  <Button type="submit" variant="contained" disabled={createMutation.isLoading || !hasStatusOptions}>
                     {createMutation.isLoading ? 'Salvando...' : 'Abrir Chamado'}
                   </Button>
                 </Box>

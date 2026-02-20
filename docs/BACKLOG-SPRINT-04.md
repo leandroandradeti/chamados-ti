@@ -61,11 +61,11 @@ Consolidar o eixo de **administração operacional** com foco em **áreas de ate
 
 ### Tarefas US-04
 
-- [ ] Expandir módulo `frontend/src/pages/Admin` além de `Configuracoes`
-- [ ] Criar página de Áreas (listagem + cadastro/edição/inativação)
-- [ ] Criar página de Grupos Técnicos (listagem + membros)
-- [ ] Criar página de Logs (consulta com filtros principais)
-- [ ] Integrar com API existente mantendo padrão de layout atual
+- [x] Expandir módulo `frontend/src/pages/Admin` além de `Configuracoes`
+- [x] Criar página de Áreas (listagem + cadastro/edição/inativação)
+- [x] Criar página de Grupos Técnicos (listagem + membros)
+- [x] Criar página de Logs (consulta com filtros principais)
+- [x] Integrar com API existente mantendo padrão de layout atual
 
 ## Critério de Pronto (Sprint 4)
 
@@ -89,3 +89,7 @@ Consolidar o eixo de **administração operacional** com foco em **áreas de ate
 2. Implementar backend de grupos + membros (US-02)
 3. Reforçar observabilidade admin e smoke checks (US-03)
 4. Entregar frontend administrativo mínimo (US-04)
+
+## Atualização de Progresso
+
+- 2026-02-19: US-04 concluída com telas operacionais mínimas de Admin (Áreas, Grupos Técnicos e Logs) integradas ao backend.

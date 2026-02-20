@@ -60,8 +60,23 @@ Invoke-WebRequest -Uri 'http://localhost:3001/api/inventario' -Headers $headers 
 - `404` para chamado inexistente.
 - `409` para transição inválida de estado (ex.: fechar já fechado, retomar não pausado).
 
+## Validação administrativa mínima (Sprint 4)
+1. Listar áreas em `GET /api/admin/areas`
+2. Criar área em `POST /api/admin/areas`
+3. Atualizar área em `PUT /api/admin/areas/:id`
+4. Inativar área em `DELETE /api/admin/areas/:id`
+5. Listar grupos em `GET /api/admin/grupos-tecnicos`
+6. Criar grupo em `POST /api/admin/grupos-tecnicos`
+7. Vincular usuário em `POST /api/admin/grupos-tecnicos/:id/usuarios`
+8. Consultar logs em `GET /api/admin/logs?limit=20`
+9. Validar trilha de auditoria por módulo:
+	- `GET /api/admin/logs?modulo=admin`
+	- `GET /api/admin/logs?entidade=area_atendimento`
+	- `GET /api/admin/logs?entidade=grupo_tecnico`
+
 ## Última execução validada
-- Data: `2026-02-17`
-- Status: `Pendente de execução completa pós-ajustes Sprint 3`
+- Data: `2026-02-20`
+- Status: `Execução parcial concluída (admin Sprint 4 validado); pendente execução completa dos cenários Sprint 3`
 - Endpoints validados anteriormente: `entidades`, `clientes (list/create/update/delete)`, `inventario (list)`, `admin logs`.
-- Escopo adicionado para validação: `ocorrencias (atribuir/transferir/pausar/retomar/comentar/resolver/fechar)`, `historico`, `sla-eventos`.
+- Escopo validado nesta execução: `auth/login`, `admin/areas`, `admin/grupos-tecnicos`, `admin/logs`.
+- Escopo pendente para validação completa: `ocorrencias (atribuir/transferir/pausar/retomar/comentar/resolver/fechar)`, `historico`, `sla-eventos`.
