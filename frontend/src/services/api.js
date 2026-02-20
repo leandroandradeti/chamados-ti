@@ -4,6 +4,17 @@ import { isTokenExpired, useAuthStore } from '../store/authStore';
 const resolveApiBaseUrl = () => {
   const configuredUrl = process.env.REACT_APP_API_URL;
 
+  const normalizeConfiguredApiUrl = (value) => {
+    const trimmed = String(value || '').trim().replace(/\/+$/, '');
+    if (!trimmed) return trimmed;
+
+    if (/\/api(\/v\d+)?$/i.test(trimmed)) {
+      return trimmed;
+    }
+
+    return `${trimmed}/api/v1`;
+  };
+
   if (!configuredUrl) {
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
       const host = window.location.hostname || 'localhost';
@@ -14,20 +25,21 @@ const resolveApiBaseUrl = () => {
   }
 
   if (typeof window === 'undefined') {
-    return configuredUrl;
+    return normalizeConfiguredApiUrl(configuredUrl);
   }
 
   const currentHost = window.location.hostname;
   const isLanAccess = !['localhost', '127.0.0.1'].includes(currentHost);
-  const isLocalhostApi = /localhost|127\.0\.0\.1/i.test(configuredUrl);
+  const normalizedConfiguredUrl = normalizeConfiguredApiUrl(configuredUrl);
+  const isLocalhostApi = /localhost|127\.0\.0\.1/i.test(normalizedConfiguredUrl);
 
   if (isLanAccess && isLocalhostApi) {
-    return configuredUrl
+    return normalizedConfiguredUrl
       .replace(/localhost/gi, currentHost)
       .replace(/127\.0\.0\.1/gi, currentHost);
   }
 
-  return configuredUrl;
+  return normalizedConfiguredUrl;
 };
 
 const api = axios.create({
