@@ -5,5 +5,9 @@
   "scripts": {
     "ci:backend": "npm --prefix backend test -- --passWithNoTests",
     "ci:frontend:build": "npm --prefix frontend run build"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "zod": "^4.3.6"
   }
 }

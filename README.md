@@ -19,6 +19,13 @@ Sistema completo de **IT Service Management (ITSM)** e **IT Asset Management (IT
 
 ---
 
+## 📸 Preview do Sistema
+
+<img width="1919" height="1079" alt="v1 0 0-4" src="https://github.com/user-attachments/assets/9c6f1c03-40f2-4b58-9c46-c8779cee4421" />
+<img width="1919" height="1079" alt="v1 0 0-3" src="https://github.com/user-attachments/assets/54b7f776-3e6f-43d9-88c9-1b3b9fe42701" />
+<img width="1919" height="1079" alt="v1 0 0-2" src="https://github.com/user-attachments/assets/8815a416-1874-4fa7-b689-ade550b6bcae" />
+<img width="1919" height="1079" alt="v1 0 0-1" src="https://github.com/user-attachments/assets/689391c1-6c82-458a-adf6-8fa7de739317" />
+
 ## 📋 Índice
 
 - [Características](#-características)

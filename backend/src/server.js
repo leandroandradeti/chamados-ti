@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const { sequelize } = require('./config/database');
 const logger = require('./utils/logger');
@@ -77,6 +78,7 @@ const vercelPreviewOriginRegex = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 // Middlewares de Segurança
 app.use(helmet());
+app.use(cookieParser());
 if (process.env.NODE_ENV === 'production' && process.env.ENFORCE_HTTPS === 'true') {
   app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {

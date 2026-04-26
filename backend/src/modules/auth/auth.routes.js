@@ -1,3 +1,5 @@
+// Logout
+router.post('/logout', authController.logout);
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
@@ -22,7 +24,7 @@ router.post('/login', loginLimiter, loginValidation, validate, authController.lo
 
 // Rotas protegidas
 router.get('/me', authenticate, authController.me);
-router.post('/refresh', authenticate, authController.refresh);
+router.post('/refresh', authController.refresh);
 router.post('/alterar-senha', authenticate, alterarSenhaValidation, validate, authController.alterarSenha);
 
 module.exports = router;
